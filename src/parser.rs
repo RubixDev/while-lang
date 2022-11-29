@@ -32,7 +32,10 @@ impl Parser {
         if self.current_token == to_expect {
             self.next();
         } else {
-            panic!("Encountered unexpected token '{:?}'", self.current_token)
+            panic!(
+                "Encountered unexpected token '{:?}', expected '{:?}'",
+                self.current_token, to_expect
+            )
         }
     }
 
@@ -61,6 +64,7 @@ impl Parser {
     fn statement(&mut self) -> Statement {
         match self.current_token {
             Token::While => Statement::While(self.while_()),
+            Token::If => Statement::If(self.if_()),
             Token::Var(_) => Statement::Assignment(self.assignment()),
             _ => panic!("Invalid statement: '{:?}'", self.current_token),
         }
@@ -78,39 +82,88 @@ impl Parser {
         While { condition, program }
     }
 
+    fn if_(&mut self) -> If {
+        self.next();
+        let condition_var = self.expect_var();
+        self.expect(Token::Equal);
+        let condition_const = match &self.current_token {
+            Token::Zero => 0,
+            Token::One => 1,
+            constant => panic!("Unexpected constant in if: '{:?}'", constant),
+        };
+        self.next();
+        self.expect(Token::Then);
+        let program = self.program();
+        self.expect(Token::End);
+        If {
+            condition_var,
+            condition_const,
+            program,
+        }
+    }
+
     fn assignment(&mut self) -> Assignment {
         let lhs = self.expect_var();
         self.expect(Token::Assign);
-        let rhs_var = self.expect_var();
 
-        let rhs_const = match self.current_token {
-            Token::Plus => {
+        match self.current_token {
+            Token::LeftBracket => {
+                let uses_equality = true;
+                let rhs_const = 0;
                 self.next();
-                let val = match self.current_token {
-                    Token::Zero => 0,
-                    Token::One => 1,
-                    _ => panic!("Invalid constant for positive assignment: '{:?}'", self.current_token),
-                };
-                self.next();
-                val
+                let rhs_var = self.expect_var();
+                self.expect(Token::Equal);
+                let rhs_var2 = self.expect_var();
+                self.expect(Token::RightBracket);
+                Assignment {
+                    uses_equality,
+                    lhs,
+                    rhs_const,
+                    rhs_var,
+                    rhs_var2,
+                }
             }
-            Token::Minus => {
-                self.next();
-                let val = match self.current_token {
-                    Token::Zero => 0,
-                    Token::One => -1,
-                    _ => panic!("Invalid constant for negative assignment: '{:?}'", self.current_token),
+            _ => {
+                let rhs_var = self.expect_var();
+                let uses_equality = false;
+                let rhs_var2 = 0;
+                let rhs_const = match self.current_token {
+                    Token::Plus => {
+                        self.next();
+                        let val = match self.current_token {
+                            Token::Zero => 0,
+                            Token::One => 1,
+                            _ => panic!(
+                                "Invalid constant for positive assignment: '{:?}'",
+                                self.current_token
+                            ),
+                        };
+                        self.next();
+                        val
+                    }
+                    Token::Minus => {
+                        self.next();
+                        let val = match self.current_token {
+                            Token::Zero => 0,
+                            Token::One => -1,
+                            _ => panic!(
+                                "Invalid constant for negative assignment: '{:?}'",
+                                self.current_token
+                            ),
+                        };
+                        self.next();
+                        val
+                    }
+                    _ => 0,
                 };
-                self.next();
-                val
+                Assignment {
+                    uses_equality,
+                    lhs,
+                    rhs_var,
+                    rhs_var2,
+                    rhs_const,
+                }
             }
-            _ => 0,
-        };
-
-        Assignment {
-            lhs,
-            rhs_var,
-            rhs_const,
         }
     }
 }

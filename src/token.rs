@@ -3,9 +3,11 @@
 pub enum Token {
     Semicolon,
     NotEq,
+    If,
     While,
     Do,
     End,
+    Then,
     Zero,
     One,
     Plus,
@@ -13,4 +15,7 @@ pub enum Token {
     Var(u64),
     Assign,
     Eof,
+    LeftBracket,
+    RightBracket,
+    Equal,
 }

@@ -35,18 +35,23 @@ impl<'src> Lexer<'src> {
         }
 
         let token = match self.current_char {
-            Some(';') => Token::Semicolon,
             None => Token::Eof,
+            Some(';') => Token::Semicolon,
             Some('0') => Token::Zero,
             Some('1') => Token::One,
             Some('+') => Token::Plus,
             Some('-') => Token::Minus,
+            Some('[') => Token::LeftBracket,
+            Some(']') => Token::RightBracket,
+            Some('=') => Token::Equal,
             Some(':') => self.make_with_eq(Token::Assign),
             Some('!') => self.make_with_eq(Token::NotEq),
 
             Some('W') => return self.make_keyword("WHILE", Token::While),
             Some('D') => return self.make_keyword("DO", Token::Do),
+            Some('T') => return self.make_keyword("THEN", Token::Then),
             Some('E') => return self.make_keyword("END", Token::End),
+            Some('I') => return self.make_keyword("IF", Token::If),
 
             Some('x') => return self.make_var(),
             char => panic!("Error while lexing token '{char:?}'"),

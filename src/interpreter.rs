@@ -40,6 +40,7 @@ impl Interpreter {
         match node {
             Statement::While(node) => self.visit_while(node),
             Statement::Assignment(node) => self.visit_assignment(node),
+            Statement::If(node) => self.visit_if(node),
         }
     }
 
@@ -49,13 +50,32 @@ impl Interpreter {
         }
     }
 
+    fn visit_if(&mut self, node: &If) {
+        if self.get_var(node.condition_var)
+            == match node.condition_const {
+                0 => 0,
+                _ => 1,
+            }
+        {
+            self.visit_program(&node.program);
+        }
+    }
+
     fn visit_assignment(&mut self, node: &Assignment) {
         self.set_var(
             node.lhs,
-            match node.rhs_const {
-                -1 => self.get_var(node.rhs_var).saturating_sub(1),
-                val => self.get_var(node.rhs_var).saturating_add(val as u64)
-            }
+            if node.uses_equality {
+                if self.get_var(node.rhs_var) == self.get_var(node.rhs_var2) {
+                    1
+                } else {
+                    0
+                }
+            } else {
+                match node.rhs_const {
+                    -1 => self.get_var(node.rhs_var).saturating_sub(1),
+                    val => self.get_var(node.rhs_var).saturating_add(val as u64),
+                }
+            },
         );
     }
 }
