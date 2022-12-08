@@ -30,8 +30,12 @@ impl<'src> Lexer<'src> {
     }
 
     fn lex_token(&mut self) -> Token {
-        while matches!(self.current_char, Some(' ' | '\n' | '\t' | '\r')) {
-            self.next();
+        loop {
+            match self.current_char {
+                Some(' ' | '\n' | '\t' | '\r') => self.next(),
+                Some('/') => self.skip_line_comment(),
+                _ => break,
+            }
         }
 
         let token = match self.current_char {
@@ -58,6 +62,18 @@ impl<'src> Lexer<'src> {
         };
         self.next();
         token
+    }
+
+    fn skip_line_comment(&mut self) {
+        self.next();
+        match self.current_char {
+            Some('/') => self.next(),
+            _ => panic!("missing second slash for comment"),
+        }
+        while !matches!(self.current_char, Some('\n') | None) {
+            self.next()
+        }
+        self.next();
     }
 
     fn make_with_eq(&mut self, token: Token) -> Token {
